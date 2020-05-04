@@ -1,13 +1,20 @@
 from abc import ABC
 import numpy as np
 import itertools
-from synthplayer.oscillators import Sine, SquareH, MixingFilter
+from synthplayer.oscillators import Sine, Triangle, Square, SquareH, Sawtooth
+from synthplayer.oscillators import Pulse, WhiteNoise, Semicircle, MixingFilter
 from synthplayer import params
 from filters import LowPassFilter
 
 oscillators = {
     'Sine': Sine,
-    'SquareH': SquareH
+    'Triangle': Triangle,
+    'Square': Square,
+    'SquareH': SquareH,
+    'Sawtooth': Sawtooth,
+    'Pulse': Pulse,
+    'WhiteNoise': WhiteNoise,
+    'Semicircle': Semicircle
 }
 
 
