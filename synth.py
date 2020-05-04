@@ -31,7 +31,6 @@ class Synth(ABC):
         self.amp_1 = kwargs.get('amp_1', 0.5)
         self.amp_2 = kwargs.get('amp_2', 0.5)
         self.phase_1 = kwargs.get('phase_1', 0)
-        self.phase_2 = kwargs.get('phase_2', 0)
         self._normalise_amp()
         self.cutoff = kwargs.get('cutoff', 10000)
 
@@ -42,7 +41,8 @@ class Synth(ABC):
             'osc_2': self.osc_2_name,
             'amp_1': self.amp_1,
             'amp_2': self.amp_2,
-            'cutoff': self.cutoff
+            'phase_1': self.phase_1,
+            'cutoff': self.cutoff,
         }
 
     def _get_raw_data_from_obj(self, obj, duration):
@@ -64,7 +64,6 @@ class Synth(ABC):
                           samplerate=self.sr)
         osc2 = self.osc_2(note,
                           amplitude=self.amp_2,
-                          phase=self.phase_2,
                           samplerate=self.sr)
         mix = MixingFilter(osc1, osc2)
         self.out = LowPassFilter(mix, cutoff=self.cutoff, samplerate=self.sr)
