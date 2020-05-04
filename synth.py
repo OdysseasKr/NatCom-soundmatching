@@ -6,7 +6,17 @@ from synthplayer.oscillators import Pulse, WhiteNoise, Semicircle, MixingFilter
 from synthplayer import params
 from filters import LowPassFilter
 
-oscillators = {
+osc_1_options = {
+    'Sine': Sine,
+    'Triangle': Triangle,
+    'Square': Square,
+    'SquareH': SquareH,
+    'Sawtooth': Sawtooth,
+    'Pulse': Pulse,
+    'Semicircle': Semicircle
+}
+
+osc_2_options = {
     'Sine': Sine,
     'Triangle': Triangle,
     'Square': Square,
@@ -32,9 +42,9 @@ class Synth(ABC):
     def set_parameters(self, **kwargs):
         """Sets the parameters of the synth"""
         self.osc_1_name = kwargs.get('osc_1', 'Sine')
-        self.osc_1 = oscillators[self.osc_1_name]
+        self.osc_1 = osc_1_options[self.osc_1_name]
         self.osc_2_name = kwargs.get('osc_2', 'Sine')
-        self.osc_2 = oscillators[self.osc_2_name]
+        self.osc_2 = osc_2_options[self.osc_2_name]
         self.amp_1 = kwargs.get('amp_1', 0.5)
         self.amp_2 = kwargs.get('amp_2', 0.5)
         self.phase_1 = kwargs.get('phase_1', 0)
