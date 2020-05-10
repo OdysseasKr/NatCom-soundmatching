@@ -7,7 +7,7 @@ from deap import creator, base, tools, algorithms
 import librosa
 import matplotlib.pyplot as plt
 
-# Define gene shape
+# Define experiment settings
 sr = 44100
 GENE_LABELS = ['osc_1',
                'amp_1',
@@ -29,6 +29,7 @@ POP_SIZE = 100
 GENERATIONS = 10
 TOURNSIZE = 3
 PARALLEL = True
+EVALUATION = 'distance' # It can be 'features' or 'distance'
 
 # Define fitness function
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -36,6 +37,7 @@ creator.create("Individual", list, fitness=creator.FitnessMin)
 
 
 def extract_features(sound_array):
+    """Extracts features using librosa"""
     centroid = librosa.feature.spectral_centroid(sound_array, sr)[0]
     bandwidth = librosa.feature.spectral_bandwidth(sound_array, sr)[0]
     flatness = librosa.feature.spectral_flatness(sound_array)[0]
@@ -45,7 +47,10 @@ def extract_features(sound_array):
 
 
 def custom_evaluate(params, target):
-    """Sum of squared error evaluation function"""
+    """Evaluation function that uses features
+    Computes the sum of squared error between the feature
+    vectors of two sounds
+    """
     mysynth = synth.Synth(sr=sr)
     params = dict(zip(GENE_LABELS, params))
     mysynth.set_parameters(**params)
@@ -55,6 +60,9 @@ def custom_evaluate(params, target):
 
 
 def distance_evaluate(params, target):
+    """Evaluation function that uses the raw distance between
+    two signals
+    """
     mysynth = synth.Synth(sr=sr)
     params = dict(zip(GENE_LABELS, params))
     mysynth.set_parameters(**params)
@@ -80,6 +88,7 @@ def custom_mutate(individual):
 
 
 def get_toolbox(target):
+    """Sets the parameters for the experiment and returns the toolbox"""
     toolbox = base.Toolbox()
 
     # Create gene expression
@@ -100,10 +109,14 @@ def get_toolbox(target):
                      creator.Individual,
                      attr_tuple,
                      1)
-
-    # Setup custom operators
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-    toolbox.register('evaluate', distance_evaluate, target=target)
+
+    # Set evaluation function
+    if EVALUATION == 'distance':
+        toolbox.register('evaluate', distance_evaluate, target=target)
+    else:
+        toolbox.register('evaluate', custom_evaluate, target=extract_features(target))
+    # Setup custom operators
     toolbox.register('mate', custom_mate)
     toolbox.register('mutate', custom_mutate)
     # Tournament selection
@@ -114,9 +127,8 @@ def get_toolbox(target):
     return toolbox
 
 
-def run(target_sound):
-    #target = extract_features(target_sound)
-    target = target_sound
+def run(target):
+    """One single prediction to run, given one target sound array"""
     toolbox = get_toolbox(target)
 
     population = toolbox.population(n=30)
@@ -140,6 +152,7 @@ def run(target_sound):
 
 
 if __name__ == '__main__':
+    # Set a target
     mysynth = synth.Synth(sr=sr)
     mysynth.set_parameters(osc_1='Sine',
                            amp_1=0.5,
@@ -148,8 +161,11 @@ if __name__ == '__main__':
                            amp_2=0.5,
                            cutoff=5000)
     target_sound = mysynth.get_sound_array()
+
+    # Get prediction
     best = run(target_sound)
     print('BEST', best)
+
     # Plot results
     plt.plot(target_sound[:300])
     mysynth = synth.Synth(sr=sr)
