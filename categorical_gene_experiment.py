@@ -8,7 +8,18 @@ import librosa
 import matplotlib.pyplot as plt
 
 # Define experiment settings
+SEED = 1
+
 sr = 44100
+
+GROUND_TRUTH = {
+                'osc_1':'Sine',
+                'amp_1':0.5,
+                'phase_1':0.2,
+                'osc_2':'Sawtooth',
+                'amp_2':0.5,
+                'cutoff':5000
+                }
 GENE_LABELS = ['osc_1',
                'amp_1',
                'phase_1',
@@ -24,44 +35,47 @@ GENE_VALUES = {
     'amp_2': np.arange(0.3, 0.8, 0.1),
     'cutoff': [2500, 5000, 7500, 10000]
 }
-GENE_SIZE = len(GENE_LABELS)
 POP_SIZE = 100
 GENERATIONS = 10
 TOURNSIZE = 3
 PARALLEL = True
-EVALUATION = 'distance' # It can be 'features' or 'distance'
-
-# Define fitness function
-creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMin)
+# Set evaluation type: if 'features', the fitness is computed on the distance between feature vectors
+#                      if 'distance', the fitness is computed on the distance between the raw signals 
+EVALUATION = 'distance'#'features' # It can be 'features' or 'distance'
 
 
 def extract_features(sound_array):
-    """Extracts features using librosa"""
-    centroid = librosa.feature.spectral_centroid(sound_array, sr)[0]
-    bandwidth = librosa.feature.spectral_bandwidth(sound_array, sr)[0]
-    flatness = librosa.feature.spectral_flatness(sound_array)[0]
-    rolloff = librosa.feature.spectral_rolloff(sound_array)[0]
-    result = np.array([centroid, bandwidth, flatness, rolloff])
-    return result.flatten()
+    """
+        Extracts MFCC and spectral bandwidth, centroid, flatness, and roll-off
+        It seems that only MFCC features already perform quite well
+    """
+    # features = []
+    # features.extend(librosa.feature.mfcc(sound_array, sr).flatten())        # MFCC
+    # features.extend(librosa.feature.spectral_centroid(sound_array, sr)[0])  # Centroid
+    # features.extend(librosa.feature.spectral_bandwidth(sound_array, sr)[0]) # Bandwidth
+    # features.extend(librosa.feature.spectral_flatness(sound_array)[0])      # Flatness
+    # features.extend(librosa.feature.spectral_rolloff(sound_array)[0])       # Rolloff
+    return librosa.feature.mfcc(sound_array, sr).flatten()#np.array(features).flatten()
 
 
-def custom_evaluate(params, target):
-    """Evaluation function that uses features
-    Computes the sum of squared error between the feature
-    vectors of two sounds
+def fitness_features(params, target):
+    """
+        Fitness function based on features
+        Computes the mean squared error between the feature
+        vectors of two signals
     """
     mysynth = synth.Synth(sr=sr)
     params = dict(zip(GENE_LABELS, params))
     mysynth.set_parameters(**params)
     soundarray = mysynth.get_sound_array()
     f_vector = extract_features(soundarray)
-    return np.sum(np.square(f_vector - target)),
+    return np.mean(np.square(f_vector - target)),
 
 
-def distance_evaluate(params, target):
-    """Evaluation function that uses the raw distance between
-    two signals
+def fitness_signals(params, target):
+    """
+        Fitness function that computes the sum squared
+        error between two raw signals
     """
     mysynth = synth.Synth(sr=sr)
     params = dict(zip(GENE_LABELS, params))
@@ -69,26 +83,30 @@ def distance_evaluate(params, target):
     soundarray = mysynth.get_sound_array()
     return np.sum(np.square(soundarray[:110] - target[:110])),
 
-def custom_mate(ind1, ind2):
-    """Mating function.
-    Selects one of the parameters and swaps them.
+def custom_mate(individual1, individual2):
     """
-    i = random.randint(0, GENE_SIZE-1)
-    ind1[i], ind2[i] = ind2[i], ind1[i]
-    return ind1, ind2
+        Mating function.
+        Swaps one parameter setting between individuals
+    """
+    i = random.randint(0, len(individual1)-1)
+    individual1[i], individual2[i] = individual2[i], individual1[i]
+    return individual1, individual2
 
 
 def custom_mutate(individual):
-    """Mutation function.
-    Randomly modifies one of the parameters
     """
-    i = random.randint(0, GENE_SIZE-1)
+        Mutation function.
+        Randomly modifies one of the parameters
+    """
+    i = random.randint(0, len(individual)-1)
     individual[i] = random.choice(GENE_VALUES[GENE_LABELS[i]])
     return individual,
 
 
-def get_toolbox(target):
-    """Sets the parameters for the experiment and returns the toolbox"""
+def get_toolbox(target, tournament_size, do_parallel=PARALLEL):
+    """
+        Sets the parameters for the experiment and returns the toolbox
+    """
     toolbox = base.Toolbox()
 
     # Create gene expression
@@ -104,6 +122,7 @@ def get_toolbox(target):
                   toolbox.attr_amp,
                   toolbox.attr_cutoff
                   )
+    # Creates an individual with a random value for each parameter (based on the definition of GENE_VALUES)
     toolbox.register('individual',
                      tools.initCycle,
                      creator.Individual,
@@ -111,66 +130,78 @@ def get_toolbox(target):
                      1)
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 
-    # Set evaluation function
+    # If EVALUATION is set to distance, fitness is computed on raw signals
+    # If EVALUATION is set to features, fitness is computed on feature vectors of signals
     if EVALUATION == 'distance':
-        toolbox.register('evaluate', distance_evaluate, target=target)
+        toolbox.register('evaluate', fitness_signals, target=target)
     else:
-        toolbox.register('evaluate', custom_evaluate, target=extract_features(target))
-    # Setup custom operators
+        toolbox.register('evaluate', fitness_features, target=extract_features(target))
+    # Define custom mate and mutate functions
     toolbox.register('mate', custom_mate)
     toolbox.register('mutate', custom_mutate)
     # Tournament selection
-    toolbox.register('select', tools.selTournament, tournsize=TOURNSIZE)
+    toolbox.register('select', tools.selTournament, tournsize=tournament_size)
     # Make it parallel AND FAST
-    if PARALLEL:
+    if do_parallel:
         toolbox.register('map', multiprocessing.Pool().map)
     return toolbox
 
 
-def run(target):
-    """One single prediction to run, given one target sound array"""
-    toolbox = get_toolbox(target)
+def run_evolutionary_algorithm(target, n_generations=GENERATIONS, population_size=POP_SIZE, 
+                               tournament_size=TOURNSIZE, crossover_prob=0.5, mutation_prob=0.1):
+    """
+        Runs the evolutionary algorithm to approximate a single target signal
+    """
+    toolbox = get_toolbox(target, tournament_size)
 
-    population = toolbox.population(n=30)
-    fits = toolbox.map(toolbox.evaluate, population)
-    print('Mean error of the initial population', np.mean(list(fits)))
+    population = toolbox.population(n=population_size)
+    fitness_vals = toolbox.map(toolbox.evaluate, population)
+    print('Mean error of the initial population {:.3f}'.format(np.mean(list(fitness_vals))))
 
     start = time.time()
-    for gen in range(1, GENERATIONS+1):
-        offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
-        fits = list(toolbox.map(toolbox.evaluate, offspring))
-        mean_fit = 0
-        for fit, ind in zip(fits, offspring):
+    for gen in range(1, n_generations+1):
+        # Perform crossover (with probability cxpb) and mutation (with probability mutpb)
+        offspring = algorithms.varAnd(population, toolbox, cxpb=crossover_prob, mutpb=mutation_prob)
+        # Calculate fitness on the offspring
+        fitness_vals = list(toolbox.map(toolbox.evaluate, offspring))
+        mean_fitness = 0
+        for fit, ind in zip(fitness_vals, offspring):
+            # Set each individuals fitness manually
             ind.fitness.values = fit
-            mean_fit += fit[0]/len(population)
+            mean_fitness += fit[0]/len(population)
         print('Generation', gen)
-        print('   Mean error: \t\t', np.mean(fits))
-        print('   Error of best: \t', np.min(fits))
-        population = toolbox.select(offspring, k=len(population))
-    print('Total runtime:', time.time()-start)
-    return tools.selBest(population, k=3)
+        print('\t{:20s} {:5.3f}'.format('Mean error:', np.mean(fitness_vals)))
+        print('\t{:20s} {:5.3f}'.format('Error of best:', np.min(fitness_vals)))
+        population = toolbox.select(offspring, k=population_size)
+    print('Total runtime: {:.2f} seconds'.format(time.time()-start))
+    return tools.selBest(population, k=1)
 
 
 if __name__ == '__main__':
+    # Set seed for reproducibility
+    random.seed(SEED)
+
     # Set a target
     mysynth = synth.Synth(sr=sr)
-    mysynth.set_parameters(osc_1='Sine',
-                           amp_1=0.5,
-                           phase_1=0.2,
-                           osc_2='Sawtooth',
-                           amp_2=0.5,
-                           cutoff=5000)
+    mysynth.set_parameters(**GROUND_TRUTH)
     target_sound = mysynth.get_sound_array()
 
-    # Get prediction
-    best = run(target_sound)
-    print('BEST', best)
+    # Define fitness function objective (minimisation)
+    creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
+    creator.create('Individual', list, fitness=creator.FitnessMin)
 
-    # Plot results
-    plt.plot(target_sound[:300])
+    # Retrieve the best approximators of the target
+    best_individual = run_evolutionary_algorithm(target_sound)[0]
+    print('BEST', best_individual)
+
+    # Plot the ground truth
+    plt.grid(True, zorder=0)
+    plt.plot(target_sound[:300], label='Target', zorder=2)
+    # Plot predicted signal
     mysynth = synth.Synth(sr=sr)
-    params = dict(zip(GENE_LABELS, best[0]))
+    params = dict(zip(GENE_LABELS, best_individual))
     mysynth.set_parameters(**params)
     soundarray = mysynth.get_sound_array()
-    plt.plot(soundarray[:300])
+    plt.plot(soundarray[:300], linewidth=1.2, label='Prediction', zorder=2)
+    plt.legend()
     plt.show()
