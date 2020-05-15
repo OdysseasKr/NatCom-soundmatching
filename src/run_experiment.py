@@ -7,6 +7,7 @@ from deap import creator, base, tools, algorithms
 import librosa
 import matplotlib.pyplot as plt
 from utils import num_of_digits
+from logger import Logger
 
 # Define experiment settings
 SEED = 1
@@ -172,30 +173,37 @@ def run_evolutionary_algorithm(n_generations=GENERATIONS, population_size=POP_SI
 
     population = toolbox.population(n=population_size)
     fitness_vals = toolbox.map(toolbox.evaluate, population)
-    print('Mean error of the initial population {:.3f}'.format(np.mean(list(fitness_vals))))
+    logger.write(f'Initial population: {population}')
+    logger.write('Mean error of the initial population = {:.3f}\n'.format(np.mean(list(fitness_vals))))
 
     start = time.time()
     for gen in range(1, n_generations+1):
+        logger.write(f'Generation {gen}')
         # Perform crossover (with probability cxpb) and mutation (with probability mutpb)
         offspring = algorithms.varAnd(population, toolbox, cxpb=crossover_prob, mutpb=mutation_prob)
+        logger.write(f'\tOffspring (after crossover and mutation): {offspring}')
         # Calculate fitness on the offspring
         fitness_vals = list(toolbox.map(toolbox.evaluate, offspring))
+        logger.write(f'\tFitness values: {[fit[0] for fit in fitness_vals]}')
         mean_fitness = 0
         for fit, ind in zip(fitness_vals, offspring):
             # Set each individuals fitness manually
             ind.fitness.values = fit
             mean_fitness += fit[0]/len(population)
-        print('Generation', gen)
-        print('\t{:20s} {:5.3f}'.format('Mean error:', np.mean(fitness_vals)))
-        print('\t{:20s} {:5.3f}'.format('Error of best:', np.min(fitness_vals)))
+        logger.write('\t{:20s} {:5.3f}'.format('Mean error:', np.mean(fitness_vals)))
+        logger.write('\t{:20s} {:5.3f}'.format('Error of best:', np.min(fitness_vals)))
 
         # If it converged
         if np.min(fitness_vals) < 0 + EPSILON:
+            logger.write("Generation converged!")
             population = offspring
             break
 
         population = toolbox.select(offspring, k=population_size)
-    print('Total runtime: {:.2f} seconds'.format(time.time()-start))
+        logger.write(f'\tNew population after selection: {population}')
+
+    logger.write('Total runtime: {:.2f} seconds'.format(time.time()-start))
+    logger.flush()
     return tools.selBest(population, k=1)
 
 
@@ -230,6 +238,8 @@ if __name__ == '__main__':
     random.seed(SEED)
     N_TARGETS = 2
 
+    logger = Logger("../logs")
+
     # Define fitness function objective (minimisation)
     creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
     creator.create('Individual', list, fitness=creator.FitnessMin)
@@ -239,21 +249,30 @@ if __name__ == '__main__':
 
     toolbox = get_toolbox(TOURNSIZE, is_binary=False)
 
-    target_sounds, best_individuals, best_fitnesses = [], [], []
+    target_params_list, target_sounds, best_individuals, best_fitnesses = [], [], [], []
 
+    logger.write("="*30)
     for i in range(N_TARGETS):
-        print("Target "+str(i))
         target_params, target_sound = next(target_generator)
-        target_sounds.append(target_sound)
         target_features = extract_features(target_sound)
+        
+        logger.write(f'TARGET {i+1}: {target_params}')
+        target_params_list.append(list(target_params.values()))
+        target_sounds.append(target_sound)
+
         toolbox.register('evaluate', fitness_features, target_features=target_features)
 
         best_individual = run_evolutionary_algorithm()[0]
 
         best_individuals.append(best_individual)
         best_fitnesses.append(fitness_features(best_individual, target_features)[0])
+        logger.write("="*30)
     
-    print(best_fitnesses)
+    logger.write(f'\nAll targets:                    {target_params_list}')
+    logger.write(f'Final predictions per target:   {best_individuals}')
+    logger.write(f'Best fitness values per target: {best_fitnesses}')
+    logger.close()
+
     for i,best_individual in enumerate(best_individuals):
         plt.grid(True, zorder=0)
         plt.plot(target_sounds[i][:300], label='Target', zorder=2)
