@@ -193,7 +193,7 @@ def run_evolutionary_algorithm(n_generations=GENERATIONS, population_size=POP_SI
         logger.write('\t{:20s} {:5.3f}'.format('Mean error:', np.mean(fitness_vals)))
         logger.write('\t{:20s} {:5.3f}'.format('Error of best:', np.min(fitness_vals)))
 
-        # If it converged
+        # If converged
         if np.min(fitness_vals) < 0 + EPSILON:
             logger.write("Generation converged!")
             population = offspring
@@ -233,26 +233,29 @@ class TargetGenerator(object):
 
         return target_params, target_sound
 
+
 if __name__ == '__main__':
     # Set seed for reproducibility
     random.seed(SEED)
+    # How many signals to approximate
     N_TARGETS = 2
-
     logger = Logger("../logs")
 
     # Define fitness function objective (minimisation)
     creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
     creator.create('Individual', list, fitness=creator.FitnessMin)
 
+    # Create target signal generator and the toolbox
     target_synth = synth.Synth(sr=sr)
     target_generator = TargetGenerator(target_synth)
-
     toolbox = get_toolbox(TOURNSIZE, is_binary=False)
 
+    # For logging and plotting
     target_params_list, target_sounds, best_individuals, best_fitnesses = [], [], [], []
 
     logger.write("="*30)
     for i in range(N_TARGETS):
+        # Generate target signal and its features
         target_params, target_sound = next(target_generator)
         target_features = extract_features(target_sound)
         
@@ -260,6 +263,7 @@ if __name__ == '__main__':
         target_params_list.append(list(target_params.values()))
         target_sounds.append(target_sound)
 
+        # Register evaluation function (different for every target)
         toolbox.register('evaluate', fitness_features, target_features=target_features)
 
         best_individual = run_evolutionary_algorithm()[0]
@@ -273,6 +277,7 @@ if __name__ == '__main__':
     logger.write(f'Best fitness values per target: {best_fitnesses}')
     logger.close()
 
+    # Plot all predictions vs. target (for debugging)
     for i,best_individual in enumerate(best_individuals):
         plt.grid(True, zorder=0)
         plt.plot(target_sounds[i][:300], label='Target', zorder=2)
