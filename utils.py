@@ -25,3 +25,25 @@ def plot_sound(sound_array):
     plt.figure(figsize=(10, 4))
     plt.plot(sound_array[:500])
     plt.show()
+
+
+def int_to_bin(x):
+    """
+        Converts integer to list of binary digits
+    """
+    return list(str(bin(x))[2:])
+
+
+def bin_to_int(x):
+    """
+        Converts a list of binary digits to an integer
+    """
+    x = ''.join(x)
+    return int(x, 2)
+
+
+def num_of_digits(x):
+    """
+        Calculates how many digits are necessary to represent x in binary
+    """
+    return len(int_to_bin(x))
