@@ -78,7 +78,7 @@ def fitness_features(pred_params, target_features):
     pred_synth = synth.Synth(sr=sr)
     pred_params = dict(zip(GENE_LABELS, pred_params))
     pred_synth.set_parameters(**pred_params)
-    
+
     pred_signal = pred_synth.get_sound_array()
     pred_features = extract_features(pred_signal)
     return np.mean(np.square(pred_features - target_features)),
@@ -140,7 +140,7 @@ def register_categorial_individual(toolbox):
                     attr_tuple,
                     1)
 
-def get_toolbox(tournament_size, is_binary, do_parallel=PARALLEL):
+def get_toolbox(tournament_size, is_binary, pool=None):
     """
         Sets the parameters for the experiment and returns the toolbox
     """
@@ -151,7 +151,7 @@ def get_toolbox(tournament_size, is_binary, do_parallel=PARALLEL):
         register_binary_individual(toolbox)
     else:
         register_categorial_individual(toolbox)
-        
+
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 
     # Define custom mate and mutate functions
@@ -160,12 +160,12 @@ def get_toolbox(tournament_size, is_binary, do_parallel=PARALLEL):
     # Tournament selection
     toolbox.register('select', tools.selTournament, tournsize=tournament_size)
     # Make it parallel AND FAST
-    if do_parallel:
-        toolbox.register('map', multiprocessing.Pool().map)
+    if pool:
+        toolbox.register('map', pool.map)
     return toolbox
 
 
-def run_evolutionary_algorithm(n_generations=GENERATIONS, population_size=POP_SIZE, 
+def run_evolutionary_algorithm(n_generations=GENERATIONS, population_size=POP_SIZE,
                                tournament_size=TOURNSIZE, crossover_prob=0.5, mutation_prob=0.1):
     """
         Runs the evolutionary algorithm to approximate a single target signal
@@ -248,7 +248,10 @@ if __name__ == '__main__':
     # Create target signal generator and the toolbox
     target_synth = synth.Synth(sr=sr)
     target_generator = TargetGenerator(target_synth)
-    toolbox = get_toolbox(TOURNSIZE, is_binary=False)
+    pool = None
+    if PARALLEL:
+        pool = multiprocessing.Pool()
+    toolbox = get_toolbox(TOURNSIZE, is_binary=False, pool=pool)
 
     # For logging and plotting
     target_params_list, target_sounds, best_individuals, best_fitnesses = [], [], [], []
@@ -258,7 +261,7 @@ if __name__ == '__main__':
         # Generate target signal and its features
         target_params, target_sound = next(target_generator)
         target_features = extract_features(target_sound)
-        
+
         logger.write(f'TARGET {i+1}: {target_params}')
         target_params_list.append(list(target_params.values()))
         target_sounds.append(target_sound)
@@ -271,7 +274,7 @@ if __name__ == '__main__':
         best_individuals.append(best_individual)
         best_fitnesses.append(fitness_features(best_individual, target_features)[0])
         logger.write("="*30)
-    
+
     logger.write(f'\nAll targets:                    {target_params_list}')
     logger.write(f'Final predictions per target:   {best_individuals}')
     logger.write(f'Best fitness values per target: {best_fitnesses}')
@@ -289,3 +292,6 @@ if __name__ == '__main__':
         plt.plot(soundarray[:300], linewidth=1.2, label='Prediction', zorder=2)
         plt.legend()
         plt.show()
+
+    if PARALLEL:
+        pool.close()
