@@ -1,7 +1,9 @@
+import os
 import random
 import multiprocessing
 import time
 import numpy as np
+import pandas as pd
 import synth
 from deap import creator, base, tools, algorithms
 import librosa
@@ -12,160 +14,20 @@ from logger import Logger
 # Define experiment settings
 SEED = 1
 EPSILON = 1
-
 sr = 44100
-
-GROUND_TRUTH = {
-                'osc_1':'Sine',
-                'amp_1':0.5,
-                'phase_1':0.2,
-                'osc_2':'Sawtooth',
-                'amp_2':0.5,
-                'cutoff':5000
-                }
-GENE_LABELS = ['osc_1',
-               'amp_1',
-               'phase_1',
-               'osc_2',
-               'amp_2',
-               'cutoff'
-               ]
-GENE_VALUES = {
-    'osc_1': list(synth.osc_1_options.keys()),
-    'amp_1': np.arange(0.3, 0.8, 0.1),
-    'phase_1': np.arange(0, 0.5, 0.1),
-    'osc_2': list(synth.osc_2_options.keys()),
-    'amp_2': np.arange(0.3, 0.8, 0.1),
-    'cutoff': [2500, 5000, 7500, 10000]
-}
-POP_SIZE = 100
-GENERATIONS = 10
+GENE = 'binary' # Can be 'categorical' or 'binary'
+POP_SIZE = 10
+GENERATIONS = 2
 TOURNSIZE = 3
 PARALLEL = True
+N_TARGETS = 2
 
+if GENE == 'categorical':
+    import categorical_ga as ga
+else:
+    import binary_ga as ga
 
-def calculate_gene_size():
-    """
-        Calculate the necessary gene size
-    """
-    gene_size = 0
-    for l in GENE_LABELS:
-        digits = num_of_digits(len(GENE_VALUES[l])-1)
-        gene_size += digits
-    return gene_size
-
-
-def extract_features(sound_array):
-    """
-        Extracts MFCC and spectral bandwidth, centroid, flatness, and roll-off
-        It seems that only MFCC features already perform quite well
-    """
-    # features = []
-    # features.extend(librosa.feature.mfcc(sound_array, sr).flatten())        # MFCC
-    # features.extend(librosa.feature.spectral_centroid(sound_array, sr)[0])  # Centroid
-    # features.extend(librosa.feature.spectral_bandwidth(sound_array, sr)[0]) # Bandwidth
-    # features.extend(librosa.feature.spectral_flatness(sound_array)[0])      # Flatness
-    # features.extend(librosa.feature.spectral_rolloff(sound_array)[0])       # Rolloff
-    return librosa.feature.mfcc(sound_array, sr).flatten()#np.array(features).flatten()
-
-
-def fitness_features(pred_params, target_features):
-    """
-        Fitness function based on features
-        Computes the mean squared error between the feature
-        vectors of two signals
-    """
-    pred_synth = synth.Synth(sr=sr)
-    pred_params = dict(zip(GENE_LABELS, pred_params))
-    pred_synth.set_parameters(**pred_params)
-
-    pred_signal = pred_synth.get_sound_array()
-    pred_features = extract_features(pred_signal)
-    return np.mean(np.square(pred_features - target_features)),
-
-
-def custom_mate(individual1, individual2):
-    """
-        Mating function.
-        Swaps one parameter setting between individuals
-    """
-    i = random.randint(0, len(individual1)-1)
-    individual1[i], individual2[i] = individual2[i], individual1[i]
-    return individual1, individual2
-
-
-def custom_mutate(individual):
-    """
-        Mutation function.
-        Randomly modifies one of the parameters
-    """
-    i = random.randint(0, len(individual)-1)
-    individual[i] = random.choice(GENE_VALUES[GENE_LABELS[i]])
-    return individual,
-
-
-def register_binary_individual(toolbox):
-    toolbox.register('attr_bin', lambda: random.choice(['0', '1']))
-    # Creates an individual with a random value for each parameter (based on the definition of GENE_VALUES)
-    gene_size = calculate_gene_size()
-    toolbox.register('individual',
-                    tools.initRepeat,
-                    creator.Individual,
-                    toolbox.attr_bin,
-                    gene_size)
-
-
-def register_categorial_individual(toolbox):
-
-    # Create gene expression
-    toolbox.register('attr_osc_1', lambda: random.choice(GENE_VALUES['osc_1']))
-    toolbox.register('attr_amp_1', lambda: random.choice(GENE_VALUES['amp_1']))
-    toolbox.register('attr_phase_1', lambda: random.choice(GENE_VALUES['phase_1']))
-    toolbox.register('attr_osc_2', lambda: random.choice(GENE_VALUES['osc_2']))
-    toolbox.register('attr_amp_2', lambda: random.choice(GENE_VALUES['amp_1']))
-    toolbox.register('attr_cutoff', lambda: random.choice(GENE_VALUES['cutoff']))
-
-    attr_tuple = (toolbox.attr_osc_1,
-                  toolbox.attr_amp_1,
-                  toolbox.attr_phase_1,
-                  toolbox.attr_osc_2,
-                  toolbox.attr_amp_2,
-                  toolbox.attr_cutoff
-                  )
-
-    # Creates an individual with a random value for each parameter (based on the definition of GENE_VALUES)
-    toolbox.register('individual',
-                    tools.initCycle,
-                    creator.Individual,
-                    attr_tuple,
-                    1)
-
-def get_toolbox(tournament_size, is_binary, pool=None):
-    """
-        Sets the parameters for the experiment and returns the toolbox
-    """
-    toolbox = base.Toolbox()
-
-    # Create gene expression
-    if is_binary:
-        register_binary_individual(toolbox)
-    else:
-        register_categorial_individual(toolbox)
-
-    toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-
-    # Define custom mate and mutate functions
-    toolbox.register('mate', custom_mate)
-    toolbox.register('mutate', custom_mutate)
-    # Tournament selection
-    toolbox.register('select', tools.selTournament, tournsize=tournament_size)
-    # Make it parallel AND FAST
-    if pool:
-        toolbox.register('map', pool.map)
-    return toolbox
-
-
-def run_evolutionary_algorithm(n_generations=GENERATIONS, population_size=POP_SIZE,
+def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_size=POP_SIZE,
                                tournament_size=TOURNSIZE, crossover_prob=0.5, mutation_prob=0.1):
     """
         Runs the evolutionary algorithm to approximate a single target signal
@@ -206,39 +68,34 @@ def run_evolutionary_algorithm(n_generations=GENERATIONS, population_size=POP_SI
     logger.flush()
     return tools.selBest(population, k=1)
 
-
 class TargetGenerator(object):
-    def __init__(self, synth):
+    def __init__(self, folder):
         super().__init__()
-        self.synth = synth
+        self.params = pd.read_csv(os.path.join(folder, 'params.csv'), index_col=False)
+        self.sounds = np.load(os.path.join(folder, 'sounds.npy'))
+        self.i = 0
 
     def __iter__(self):
+        self.i = 0
         return self
 
     def __next__(self):
-        return self.next()
+        if self.i < len(self.sounds):
+            return self.get_values()
+        else:
+            raise StopIteration
 
-    def next(self):
-        return self.get_random_values()
-
-    def get_random_values(self):
-        target_params = {}
-        for k in GENE_VALUES:
-            target_params[k] = random.choice(GENE_VALUES[k])
-
-        target_params['amp_2'] = 1 - target_params['amp_1']
-
-        target_synth.set_parameters(**target_params)
-        target_sound = target_synth.get_sound_array()
+    def get_values(self):
+        target_params = self.params.iloc[i].to_dict()
+        target_sound = self.sounds[i]
+        self.i += 1
 
         return target_params, target_sound
-
 
 if __name__ == '__main__':
     # Set seed for reproducibility
     random.seed(SEED)
     # How many signals to approximate
-    N_TARGETS = 2
     logger = Logger("../logs")
 
     # Define fitness function objective (minimisation)
@@ -246,34 +103,34 @@ if __name__ == '__main__':
     creator.create('Individual', list, fitness=creator.FitnessMin)
 
     # Create target signal generator and the toolbox
-    target_synth = synth.Synth(sr=sr)
-    target_generator = TargetGenerator(target_synth)
+    target_generator = TargetGenerator("../dataset")
+    toolbox = ga.get_toolbox(TOURNSIZE)
+
+    # Enable parallel code
     pool = None
     if PARALLEL:
         pool = multiprocessing.Pool()
-    toolbox = get_toolbox(TOURNSIZE, is_binary=False, pool=pool)
+        toolbox.register('map', pool.map)
 
     # For logging and plotting
     target_params_list, target_sounds, best_individuals, best_fitnesses = [], [], [], []
 
-    logger.write("="*30)
     for i in range(N_TARGETS):
         # Generate target signal and its features
         target_params, target_sound = next(target_generator)
-        target_features = extract_features(target_sound)
+        target_features = ga.extract_features(target_sound)
 
         logger.write(f'TARGET {i+1}: {target_params}')
         target_params_list.append(list(target_params.values()))
         target_sounds.append(target_sound)
 
         # Register evaluation function (different for every target)
-        toolbox.register('evaluate', fitness_features, target_features=target_features)
+        toolbox.register('evaluate', ga.fitness, target_features=target_features)
 
-        best_individual = run_evolutionary_algorithm()[0]
+        best_individual = run_evolutionary_algorithm(toolbox)[0]
 
         best_individuals.append(best_individual)
-        best_fitnesses.append(fitness_features(best_individual, target_features)[0])
-        logger.write("="*30)
+        best_fitnesses.append(ga.fitness(best_individual, target_features)[0])
 
     logger.write(f'\nAll targets:                    {target_params_list}')
     logger.write(f'Final predictions per target:   {best_individuals}')
@@ -286,7 +143,7 @@ if __name__ == '__main__':
         plt.plot(target_sounds[i][:300], label='Target', zorder=2)
         # Plot predicted signal
         mysynth = synth.Synth(sr=sr)
-        params = dict(zip(GENE_LABELS, best_individual))
+        params = ga.individual_to_params(best_individual)
         mysynth.set_parameters(**params)
         soundarray = mysynth.get_sound_array()
         plt.plot(soundarray[:300], linewidth=1.2, label='Prediction', zorder=2)
