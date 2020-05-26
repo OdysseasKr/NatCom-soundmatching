@@ -17,11 +17,12 @@ SEED = 2
 EPSILON = 1
 sr = 44100
 GENE = 'binary' # Can be 'categorical' or 'binary'
-POP_SIZE = 10
-GENERATIONS = 2
+POP_SIZE = 100
+GENERATIONS = 10
 TOURNSIZE = 3
 PARALLEL = True
 N_TARGETS = 2
+N_RUNS = 2
 
 if GENE == 'categorical':
     import categorical_ga as ga
@@ -103,11 +104,12 @@ if __name__ == '__main__':
 
         # Register evaluation function (different for every target)
         toolbox.register('evaluate', ga.fitness, target_features=target_features)
-
-        best_individual = run_evolutionary_algorithm(toolbox)[0]
-
-        best_individuals.append(best_individual)
-        best_fitnesses.append(ga.fitness(best_individual, target_features)[0])
+        for n in range(N_RUNS):
+            target_params_list.append(list(target_params.values()))
+            target_sounds.append(target_sound)
+            best_individual = run_evolutionary_algorithm(toolbox)[0]
+            best_individuals.append(best_individual)
+            best_fitnesses.append(ga.fitness(best_individual, target_features)[0])
 
     logger.write(f'\nAll targets:                    {target_params_list}')
     logger.write(f'Final predictions per target:   {best_individuals}')
