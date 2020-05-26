@@ -92,7 +92,7 @@ def mate(individual1, individual2, k):
         Mating function.
         Swaps k parameters between individuals (k-point crossover)
     """
-    pos = np.random.randint(0, len(individual1), size=k)
+    pos = random.sample(range(len(individual1)), k)
     for i in pos:
         individual1[i], individual2[i] = individual2[i], individual1[i]
     return individual1, individual2
@@ -103,7 +103,7 @@ def mutate(individual, k):
         Mutation function.
         Randomly modifies k parameters
     """
-    pos = np.random.randint(0, len(individual), size=k)
+    pos = random.sample(range(len(individual)), k)
     for i in pos:
         individual[i] = individual[i] = '1' if individual[i] == '0' else '0'
     return individual,
