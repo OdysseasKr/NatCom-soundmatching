@@ -1,26 +1,12 @@
 import random
 import numpy as np
 import synth
+from target import GENE_LABELS, GENE_VALUES
 from deap import creator, base, tools
 import librosa
 
 # Define experiment settings
 sr = 44100
-GENE_LABELS = ['osc_1',
-               'amp_1',
-               'phase_1',
-               'osc_2',
-               'amp_2',
-               'cutoff'
-               ]
-GENE_VALUES = {
-    'osc_1': list(synth.osc_1_options.keys()),
-    'amp_1': np.arange(0.3, 0.8, 0.1),
-    'phase_1': np.arange(0, 0.5, 0.1),
-    'osc_2': list(synth.osc_2_options.keys()),
-    'amp_2': np.arange(0.3, 0.8, 0.1),
-    'cutoff': [2500, 5000, 7500, 10000]
-}
 
 
 def int_to_bin(x):

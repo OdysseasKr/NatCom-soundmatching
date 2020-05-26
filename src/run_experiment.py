@@ -10,9 +10,10 @@ import librosa
 import matplotlib.pyplot as plt
 from utils import num_of_digits
 from logger import Logger
+from target import TargetGenerator
 
 # Define experiment settings
-SEED = 1
+SEED = 2
 EPSILON = 1
 sr = 44100
 GENE = 'binary' # Can be 'categorical' or 'binary'
@@ -68,30 +69,6 @@ def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_si
     logger.flush()
     return tools.selBest(population, k=1)
 
-class TargetGenerator(object):
-    def __init__(self, folder):
-        super().__init__()
-        self.params = pd.read_csv(os.path.join(folder, 'params.csv'), index_col=False)
-        self.sounds = np.load(os.path.join(folder, 'sounds.npy'))
-        self.i = 0
-
-    def __iter__(self):
-        self.i = 0
-        return self
-
-    def __next__(self):
-        if self.i < len(self.sounds):
-            return self.get_values()
-        else:
-            raise StopIteration
-
-    def get_values(self):
-        target_params = self.params.iloc[i].to_dict()
-        target_sound = self.sounds[i]
-        self.i += 1
-
-        return target_params, target_sound
-
 if __name__ == '__main__':
     # Set seed for reproducibility
     random.seed(SEED)
@@ -103,7 +80,7 @@ if __name__ == '__main__':
     creator.create('Individual', list, fitness=creator.FitnessMin)
 
     # Create target signal generator and the toolbox
-    target_generator = TargetGenerator("../dataset")
+    target_generator = TargetGenerator()
     toolbox = ga.get_toolbox(TOURNSIZE)
 
     # Enable parallel code

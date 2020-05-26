@@ -1,26 +1,12 @@
 import random
 import numpy as np
 import synth
+from target import GENE_LABELS, GENE_VALUES
 from deap import creator, base, tools
 import librosa
 
 # Define experiment settings
 sr = 44100
-GENE_LABELS = ['osc_1',
-               'amp_1',
-               'phase_1',
-               'osc_2',
-               'amp_2',
-               'cutoff'
-               ]
-GENE_VALUES = {
-    'osc_1': list(synth.osc_1_options.keys()),
-    'amp_1': np.arange(0.3, 0.8, 0.1),
-    'phase_1': np.arange(0, 0.5, 0.1),
-    'osc_2': list(synth.osc_2_options.keys()),
-    'amp_2': np.arange(0.3, 0.8, 0.1),
-    'cutoff': [2500, 5000, 7500, 10000]
-}
 
 
 def individual_to_params(individual):
@@ -82,10 +68,12 @@ def get_toolbox(tournament_size):
     # Create gene expression
     toolbox.register('attr_osc_1', lambda: random.choice(GENE_VALUES['osc_1']))
     toolbox.register('attr_amp_1', lambda: random.choice(GENE_VALUES['amp_1']))
-    toolbox.register('attr_phase_1', lambda: random.choice(GENE_VALUES['phase_1']))
+    toolbox.register('attr_phase_1',
+                     lambda: random.choice(GENE_VALUES['phase_1']))
     toolbox.register('attr_osc_2', lambda: random.choice(GENE_VALUES['osc_2']))
     toolbox.register('attr_amp_2', lambda: random.choice(GENE_VALUES['amp_1']))
-    toolbox.register('attr_cutoff', lambda: random.choice(GENE_VALUES['cutoff']))
+    toolbox.register('attr_cutoff',
+                     lambda: random.choice(GENE_VALUES['cutoff']))
 
     attr_tuple = (toolbox.attr_osc_1,
                   toolbox.attr_amp_1,
