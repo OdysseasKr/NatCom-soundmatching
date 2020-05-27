@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
         # Register evaluation function (different for every target)
         toolbox.register('evaluate', ga.fitness, target_features=target_features)
-        for n in tqdm.tqdm(range(N_RUNS), desc = "#runs   ", leave = False, ncols = 60):
+        for n in tqdm.tqdm(range(N_RUNS), desc = "   #runs", leave = False, ncols = 60):
             target_params_list.append(list(target_params.values()))
             target_sounds.append(target_sound)
             best_individual = run_evolutionary_algorithm(toolbox)[0]
