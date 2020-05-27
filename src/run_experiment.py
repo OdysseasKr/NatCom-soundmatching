@@ -1,4 +1,5 @@
 import os
+import tqdm
 import random
 import multiprocessing
 import time
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     # For logging and plotting
     target_params_list, target_sounds, best_individuals, best_fitnesses = [], [], [], []
 
-    for i in range(N_TARGETS):
+    for i in tqdm.tqdm(range(N_TARGETS), desc = "#signals", ncols = 60):
         # Generate target signal and its features
         target_params, target_sound = next(target_generator)
         target_features = ga.extract_features(target_sound)
@@ -104,7 +105,7 @@ if __name__ == '__main__':
 
         # Register evaluation function (different for every target)
         toolbox.register('evaluate', ga.fitness, target_features=target_features)
-        for n in range(N_RUNS):
+        for n in tqdm.tqdm(range(N_RUNS), desc = "#runs   ", leave = False, ncols = 60):
             target_params_list.append(list(target_params.values()))
             target_sounds.append(target_sound)
             best_individual = run_evolutionary_algorithm(toolbox)[0]
