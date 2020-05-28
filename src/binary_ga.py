@@ -4,9 +4,12 @@ import synth
 from target import GENE_LABELS, GENE_VALUES
 from deap import creator, base, tools
 import librosa
+from cachetools import cached, LRUCache
+from cachetools.keys import hashkey
 
 # Define experiment settings
 sr = 44100
+cache = LRUCache(maxsize=2000)
 
 
 def int_to_bin(x):
@@ -72,6 +75,7 @@ def extract_features(sound_array):
     return librosa.feature.mfcc(sound_array, sr).flatten()
 
 
+@cached(cache, key=lambda individual, target_features: hashkey(tuple(individual), tuple(target_features)))
 def fitness(individual, target_features):
     """
         Fitness function based on features
@@ -80,11 +84,11 @@ def fitness(individual, target_features):
     """
     pred_synth = synth.Synth(sr=sr)
     pred_params = individual_to_params(individual)
-    pred_synth = synth.Synth(sr=sr)
     pred_synth.set_parameters(**pred_params)
-    soundarray = pred_synth.get_sound_array()
-    f_vector = extract_features(soundarray)
-    return np.mean(np.square(f_vector - target_features)),
+
+    pred_signal = pred_synth.get_sound_array()
+    pred_features = extract_features(pred_signal)
+    return np.mean(np.square(pred_features - target_features)),
 
 
 def mate(individual1, individual2, k):
