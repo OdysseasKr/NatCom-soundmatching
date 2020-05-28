@@ -4,12 +4,12 @@ import synth
 from target import GENE_LABELS, GENE_VALUES
 from deap import creator, base, tools
 import librosa
-from cachetools import cached, LRUCache
+from cachetools import cached, RRCache
 from cachetools.keys import hashkey
 
 # Define experiment settings
 sr = 44100
-cache = LRUCache(maxsize=2000)
+cache = RRCache(maxsize=100)
 
 
 def individual_to_params(individual):
