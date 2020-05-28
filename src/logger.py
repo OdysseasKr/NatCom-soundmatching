@@ -22,7 +22,8 @@ class Logger:
         self._curr_target = len(self.log['targets'])
         self.log['targets'].append({'target': target, 'runs': []})
 
-    def add_run(self, best, best_fit, n_gens, early_stopping, runtime):
+    def add_run(self, best, best_fit, n_gens, early_stopping,
+                runtime, gen_stats):
         if self._curr_target is None:
             raise AssertionError('No target so far. ' +
                                  'Can\'t add a new run for an unknown target')
@@ -32,7 +33,8 @@ class Logger:
             'best_fit': float(best_fit),
             'n_gens': n_gens,
             'early_stopping': early_stopping,
-            'runtime': runtime
+            'runtime': runtime,
+            'gen_stats': gen_stats
         }
 
         self.log['targets'][self._curr_target]['runs'].append(run_obj)

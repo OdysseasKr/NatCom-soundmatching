@@ -26,6 +26,15 @@ if GENE == 'categorical':
 else:
     import binary_ga as ga
 
+def get_gen_stats(toolbox, population):
+    """
+        Returns the stats for a single generation
+    """
+    best = tools.selBest(population, k=1)
+    best = [*toolbox.map(toolbox.evaluate, best)][0][0]
+    worst = tools.selWorst(population, k=1)
+    worst = [*toolbox.map(toolbox.evaluate, worst)][0][0]
+    return {'best': float(best), 'worst': float(worst)}
 
 def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_size=POP_SIZE,
                                tournament_size=TOURNSIZE, crossover_prob=0.5, mutation_prob=0.1):
@@ -35,9 +44,13 @@ def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_si
 
     population = toolbox.population(n=population_size)
     fitness_vals = toolbox.map(toolbox.evaluate, population)
+    gen_stats = []
 
     start = time.time()
     for gen in range(1, n_generations+1):
+        # Add stats of existing population
+        gen_stats.append(get_gen_stats(toolbox, population))
+
         # Perform crossover (with probability cxpb) and mutation (with probability mutpb)
         offspring = algorithms.varAnd(population, toolbox, cxpb=crossover_prob, mutpb=mutation_prob)
         # Calculate fitness on the offspring
@@ -54,9 +67,11 @@ def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_si
             break
 
         population = toolbox.select(offspring, k=population_size)
-    run_time = time.time() - start
+    runtime = time.time() - start
+    # Add stats of final population
+    gen_stats.append(get_gen_stats(toolbox, population))
 
-    return tools.selBest(population, k=1)[0], gen, run_time
+    return tools.selBest(population, k=1)[0], gen, runtime, gen_stats
 
 if __name__ == '__main__':
     # How many signals to approximate
@@ -103,13 +118,14 @@ if __name__ == '__main__':
         toolbox.register('evaluate', ga.fitness, target_features=target_features)
         for n in range(N_RUNS):
             print(' Run', n)
-            best_individual, gens, runtime = run_evolutionary_algorithm(toolbox)
+            best_individual, gens, runtime, gen_stats = run_evolutionary_algorithm(toolbox)
 
             logger.add_run(best=ga.individual_to_params(best_individual),
                            best_fit=ga.fitness(best_individual, target_features)[0],
                            n_gens=gens,
                            early_stopping=(gens < GENERATIONS),
-                           runtime=runtime)
+                           runtime=runtime,
+                           gen_stats=gen_stats)
 
     logger.close()
 
