@@ -12,13 +12,13 @@ from target import TargetGenerator
 SEED = 2
 EPSILON = 1
 sr = 44100
-GENE = 'binary' # Can be 'categorical' or 'binary'
-POP_SIZE = 100
+GENE = 'categorical' # Can be 'categorical' or 'binary'
+POP_SIZE = 50
 GENERATIONS = 10
 TOURNSIZE = 3
 PARALLEL = True
-N_TARGETS = 2
-N_RUNS = 2
+N_TARGETS = 5
+N_RUNS = 4
 
 if GENE == 'categorical':
     import categorical_ga as ga
@@ -89,26 +89,21 @@ if __name__ == '__main__':
         toolbox.register('map', pool.map)
 
     # For logging and plotting
-    target_params_list, target_sounds, best_individuals, best_fitnesses = [], [], [], []
 
     for i in range(N_TARGETS):
+        print('Target', i)
         # Generate target signal and its features
         target_params, target_sound = next(target_generator)
         target_features = ga.extract_features(target_sound)
 
         logger.set_target(target_params)
-        target_params_list.append(list(target_params.values()))
-        target_sounds.append(target_sound)
 
         # Register evaluation function (different for every target)
         toolbox.register('evaluate', ga.fitness, target_features=target_features)
         for n in range(N_RUNS):
-            target_params_list.append(list(target_params.values()))
-            target_sounds.append(target_sound)
+            print(' Run', n)
             best_individual, gens, runtime = run_evolutionary_algorithm(toolbox)
 
-            best_individuals.append(best_individual)
-            best_fitnesses.append(ga.fitness(best_individual, target_features)[0])
             logger.add_run(best=ga.individual_to_params(best_individual),
                            best_fit=ga.fitness(best_individual, target_features)[0],
                            n_gens=gens,
@@ -116,18 +111,7 @@ if __name__ == '__main__':
                            runtime=runtime)
 
     logger.close()
-    # Plot all predictions vs. target (for debugging)
-    for i, best_individual in enumerate(best_individuals):
-        plt.grid(True, zorder=0)
-        plt.plot(target_sounds[i][:300], label='Target', zorder=2)
-        # Plot predicted signal
-        mysynth = synth.Synth(sr=sr)
-        params = ga.individual_to_params(best_individual)
-        mysynth.set_parameters(**params)
-        soundarray = mysynth.get_sound_array()
-        plt.plot(soundarray[:300], linewidth=1.2, label='Prediction', zorder=2)
-        plt.legend()
-        plt.show()
+
 
     if PARALLEL:
         pool.close()
