@@ -19,6 +19,7 @@ TOURNSIZE = 3
 PARALLEL = True
 N_TARGETS = 5
 N_RUNS = 4
+DESCRIPTION = 'A sample description for the log file'
 
 if GENE == 'categorical':
     import categorical_ga as ga
@@ -59,7 +60,7 @@ def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_si
 
 if __name__ == '__main__':
     # How many signals to approximate
-    logger = Logger('../logs')
+    logger = Logger('../logs', DESCRIPTION)
     logger.set_header({
         'seed': SEED,
         'epsilon': EPSILON,
