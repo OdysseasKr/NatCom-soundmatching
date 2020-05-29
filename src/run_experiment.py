@@ -7,18 +7,19 @@ from deap import creator, base, tools, algorithms
 import matplotlib.pyplot as plt
 from logger import Logger
 from target import TargetGenerator
+from utils import plot_results
 
 # Define experiment settings
 SEED = 2
 EPSILON = 1
 sr = 44100
 GENE = 'categorical' # Can be 'categorical' or 'binary'
-POP_SIZE = 50
-GENERATIONS = 10
-TOURNSIZE = 3
+POP_SIZE = 25
+GENERATIONS = 30
+TOURNSIZE = 10
 PARALLEL = True
-N_TARGETS = 5
-N_RUNS = 4
+N_TARGETS = 10
+N_RUNS = 5
 DESCRIPTION = 'A sample description for the log file'
 
 if GENE == 'categorical':
@@ -74,7 +75,7 @@ def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_si
     return tools.selBest(population, k=1)[0], gen, runtime, gen_stats
 
 if __name__ == '__main__':
-    # How many signals to approximate
+    How many signals to approximate
     logger = Logger('../logs', DESCRIPTION)
     logger.set_header({
         'seed': SEED,
@@ -132,3 +133,5 @@ if __name__ == '__main__':
 
     if PARALLEL:
         pool.close()
+
+    plot_results(logger.path)

@@ -2,7 +2,7 @@ import os
 import datetime
 import json
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class Logger:
     def __init__(self, path, description=""):
@@ -71,4 +71,4 @@ class Logger:
     def close(self):
         self.calculate_metrics()
         with open(self.path, 'w') as outfile:
-            json.dump(self.log, outfile)
+            json.dump(self.log, outfile, indent = "  ")
