@@ -4,9 +4,12 @@ import synth
 from target import GENE_LABELS, GENE_VALUES
 from deap import creator, base, tools
 import librosa
+from cachetools import cached, RRCache
+from cachetools.keys import hashkey
 
 # Define experiment settings
 sr = 44100
+cache = RRCache(maxsize=100)
 
 
 def individual_to_params(individual):
@@ -24,6 +27,7 @@ def extract_features(sound_array):
     return librosa.feature.mfcc(sound_array, sr).flatten()
 
 
+@cached(cache, key=lambda individual, target_features: hashkey(tuple(individual), tuple(target_features)))
 def fitness(individual, target_features):
     """
         Fitness function based on features
