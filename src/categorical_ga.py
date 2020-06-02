@@ -46,10 +46,10 @@ def fitness(individual, target_features):
 def mate(individual1, individual2):
     """
         Mating function.
-        Swaps one parameter setting between individuals (1-point crossover)
+        Swaps parameter setting between individuals from a certain point (1-point crossover)
     """
-    i = random.randint(0, len(individual1)-1)
-    individual1[i], individual2[i] = individual2[i], individual1[i]
+    k = random.randint(0, len(individual1) - 1)
+    individual1[k:], individual2[k:] = individual2[k:], individual1[k:]
     return individual1, individual2
 
 

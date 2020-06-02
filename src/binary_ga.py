@@ -91,25 +91,25 @@ def fitness(individual, target_features):
     return np.mean(np.square(pred_features - target_features)),
 
 
-def mate(individual1, individual2, k):
+def mate(individual1, individual2):
     """
         Mating function.
-        Swaps k parameters between individuals (k-point crossover)
+        Swaps k parameters between individuals (1-point crossover)
     """
-    pos = random.sample(range(len(individual1)), k)
-    for i in pos:
-        individual1[i], individual2[i] = individual2[i], individual1[i]
+    k = random.randint(0, len(individual1) - 1)
+    individual1[k:], individual2[k:] = individual2[k:], individual1[k:]
     return individual1, individual2
 
 
-def mutate(individual, k):
+def mutate(individual):
     """
         Mutation function.
-        Randomly modifies k parameters
+        Randomly flips a bit with probability 1/len(individual)
     """
-    pos = random.sample(range(len(individual)), k)
-    for i in pos:
-        individual[i] = individual[i] = '1' if individual[i] == '0' else '0'
+    l = len(individual)
+    for i in range(l):
+        if random.random() < 1/l:
+            individual[i] = '1' if individual[i] == '0' else '0'
     return individual,
 
 
@@ -130,8 +130,8 @@ def get_toolbox(tournament_size):
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 
     # Define custom mate and mutate functions
-    toolbox.register('mate', mate, k=5)
-    toolbox.register('mutate', mutate, k=2)
+    toolbox.register('mate', mate)
+    toolbox.register('mutate', mutate)
     # Tournament selection
     toolbox.register('select', tools.selTournament, tournsize=tournament_size)
 
