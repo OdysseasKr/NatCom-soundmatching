@@ -17,7 +17,7 @@ POP_SIZE = 25
 GENERATIONS = 30
 TOURNSIZE = 10
 PARALLEL = True
-N_TARGETS = 10
+N_TARGETS = 2
 N_RUNS = 5
 DESCRIPTION = 'A sample description for the log file'
 
@@ -125,6 +125,8 @@ if __name__ == '__main__':
                            early_stopping=(gens < GENERATIONS),
                            runtime=runtime,
                            gen_stats=gen_stats)
+        
+        logger.calculate_metrics(False)
 
     logger.close()
 
