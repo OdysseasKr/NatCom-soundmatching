@@ -1,3 +1,4 @@
+import argparse
 import tqdm
 import random
 import multiprocessing
@@ -22,6 +23,30 @@ N_RUNS = 5
 CROSSOVER_PROB = 0.5
 MUTATION_PROB = 0.1
 DESCRIPTION = 'Hyper Parameter optimizations 0.2'
+
+
+### Argument parser ###
+parser = argparse.ArgumentParser(description='Run a genetic algorithm for sound matching with specified parameters.')
+parser.add_argument('-gene', nargs='+', dest="genes", default = [GENE], help="Gene representation (categorical/binary)")
+parser.add_argument('-s', type=int, nargs='?', dest="seed",
+                    default = SEED, help='Seed')
+parser.add_argument('-e', type=int, nargs='?', dest="epsilon",
+                    default = EPSILON, help='Error margin for convergence')
+parser.add_argument('-p', type=int, nargs='?', dest="pop_size",
+                    default = POP_SIZE, help="Population size")
+parser.add_argument('-g', type=int, nargs='?', dest="generations",
+                    default = GENERATIONS, help="Number of generations")
+parser.add_argument('-t', type=int, nargs='?', dest='tournsize',
+                    default = TOURNSIZE, help="Tournament size")
+parser.add_argument('-ntargets', type=int, nargs='?', dest='n_targets',
+                    default = N_TARGETS, help="Number of targets to approximate")
+parser.add_argument('-nruns', type=int, nargs='?', dest='n_runs',
+                    default = N_RUNS, help="Number of runs for each target")
+parser.add_argument('-cp', type=float, nargs='+', dest='crossover_probs',
+                    default = [CROSSOVER_PROB], help="Crossover probabilities to test")
+parser.add_argument('-mp', type=float, nargs='+', dest='mutation_probs',
+                    default = [MUTATION_PROB], help="Mutation probabilities to test")
+
 
 if GENE == 'categorical':
     import categorical_ga as ga
@@ -82,63 +107,67 @@ def run_evolutionary_algorithm(toolbox,
 
 
 if __name__ == '__main__':
-    logger = Logger('../logs', DESCRIPTION)
-    logger.set_header({
-        'seed': SEED,
-        'epsilon': EPSILON,
-        'gene': GENE,
-        'pop_size': POP_SIZE,
-        'max_gen': GENERATIONS,
-        'tourn_size': TOURNSIZE,
-        'n_targets': N_TARGETS,
-        'n_runs': N_RUNS
-    })
+    args = parser.parse_args()
 
-    # Set seed for reproducibility
-    random.seed(SEED)
+    print(args.genes, args.crossover_probs, args.mutation_probs)
 
-    # Define fitness function objective (minimisation)
-    creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
-    creator.create('Individual', list, fitness=creator.FitnessMin)
+    for gene in args.genes:
+        for crossover_prob in args.crossover_probs:
+            for mutation_prob in args.mutation_probs:
+                logger = Logger('../logs', DESCRIPTION)
+                logger.set_header({
+                    'seed': args.seed,
+                    'epsilon': args.epsilon,
+                    'gene': gene,
+                    'pop_size': args.pop_size,
+                    'max_gen': args.generations,
+                    'tourn_size': args.tournsize,
+                    'n_targets': args.n_targets,
+                    'n_runs': args.n_runs
+                })
 
-    # Create target signal generator and the toolbox
-    target_generator = TargetGenerator()
-    toolbox = ga.get_toolbox(TOURNSIZE)
+                # Set seed for reproducibility
+                random.seed(args.seed)
 
-    # Enable parallel code
-    pool = None
-    if PARALLEL:
-        pool = multiprocessing.Pool()
-        toolbox.register('map', pool.map)
+                # Define fitness function objective (minimisation)
+                creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
+                creator.create('Individual', list, fitness=creator.FitnessMin)
 
-    # For logging and plotting
+                # Create target signal generator and the toolbox
+                target_generator = TargetGenerator()
+                toolbox = ga.get_toolbox(args.tournsize)
 
-    for i in tqdm.tqdm(range(N_TARGETS), desc="#signals", ncols = 60):
-        # Generate target signal and its features
-        target_params, target_sound = next(target_generator)
-        target_features = ga.extract_features(target_sound)
+                # Enable parallel code
+                pool = None
+                if PARALLEL:
+                    pool = multiprocessing.Pool()
+                    toolbox.register('map', pool.map)
 
-        logger.set_target(target_params)
+                # For logging and plotting
 
-        # Register evaluation function (different for every target)
-        toolbox.register('evaluate', ga.fitness, target_features=target_features)
-        for n in tqdm.tqdm(range(N_RUNS), desc="   #runs", leave=False, ncols=60):
-            best_individual, gens, runtime, gen_stats = run_evolutionary_algorithm(toolbox)
+                for i in tqdm.tqdm(range(args.n_targets), desc="#signals", ncols = 60):
+                    # Generate target signal and its features
+                    target_params, target_sound = next(target_generator)
+                    target_features = ga.extract_features(target_sound)
 
-            logger.add_run(best=ga.individual_to_params(best_individual),
-                           best_fit=ga.fitness(best_individual, target_features)[0],
-                           n_gens=gens,
-                           early_stopping=(gens < GENERATIONS),
-                           runtime=runtime,
-                           gen_stats=gen_stats)
+                    logger.set_target(target_params)
 
-        logger.calculate_metrics(False)
+                    # Register evaluation function (different for every target)
+                    toolbox.register('evaluate', ga.fitness, target_features=target_features)
+                    for n in tqdm.tqdm(range(args.n_runs), desc="   #runs", leave=False, ncols=60):
+                        best_individual, gens, runtime, gen_stats = run_evolutionary_algorithm(toolbox)
 
-    logger.close()
+                        logger.add_run(best=ga.individual_to_params(best_individual),
+                                    best_fit=ga.fitness(best_individual, target_features)[0],
+                                    n_gens=gens,
+                                    early_stopping=(gens < args.generations),
+                                    runtime=runtime,
+                                    gen_stats=gen_stats)
 
+                    logger.calculate_metrics(False)
 
+                logger.close()
 
-    if PARALLEL:
-        pool.close()
+                if PARALLEL:
+                    pool.close()
 
-    plot_results(logger.path)
