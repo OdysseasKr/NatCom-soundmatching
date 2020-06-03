@@ -10,16 +10,18 @@ from utils import plot_results
 
 # Define experiment settings
 SEED = 2
-EPSILON = 1
+EPSILON = 10
 sr = 44100
 GENE = 'categorical'  # Can be 'categorical' or 'binary'
-POP_SIZE = 25
+POP_SIZE = 50
 GENERATIONS = 30
 TOURNSIZE = 10
 PARALLEL = True
-N_TARGETS = 2
+N_TARGETS = 20
 N_RUNS = 5
-DESCRIPTION = 'A sample description for the log file'
+CROSSOVER_PROB = 0.5
+MUTATION_PROB = 0.1
+DESCRIPTION = 'Hyper Parameter optimizations 0.2'
 
 if GENE == 'categorical':
     import categorical_ga as ga
@@ -37,8 +39,12 @@ def get_gen_stats(toolbox, population):
     worst = [*toolbox.map(toolbox.evaluate, worst)][0][0]
     return {'best': float(best), 'worst': float(worst)}
 
-def run_evolutionary_algorithm(toolbox, n_generations=GENERATIONS, population_size=POP_SIZE,
-                               tournament_size=TOURNSIZE, crossover_prob=0.5, mutation_prob=0.1):
+def run_evolutionary_algorithm(toolbox,
+                               n_generations=GENERATIONS,
+                               population_size=POP_SIZE,
+                               tournament_size=TOURNSIZE,
+                               crossover_prob=CROSSOVER_PROB,
+                               mutation_prob=MUTATION_PROB):
     """
         Runs the evolutionary algorithm to approximate a single target signal
     """
@@ -125,7 +131,7 @@ if __name__ == '__main__':
                            early_stopping=(gens < GENERATIONS),
                            runtime=runtime,
                            gen_stats=gen_stats)
-        
+
         logger.calculate_metrics(False)
 
     logger.close()
