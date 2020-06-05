@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class Logger:
     def __init__(self, path, description=""):
         super().__init__()
-        self.date = str(datetime.datetime.now()).replace(" ", "-")
+        self.date = str(datetime.datetime.now()).replace(" ", "-").replace(":","-")
         self.path = os.path.join(path, self.date + '.json')
         if not os.path.exists(path):
             os.mkdir(path)
