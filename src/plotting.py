@@ -16,8 +16,8 @@ def best_worst_fitness_graph(path, show=True, save=False, scaler=SCALER):
     # Load data and variables for saving
     data = json.load(open(path))
     gene_representation = data["gene"]
-    mut_prob = data["crossover-prob"]
-    cross_prob = data["mutation-prob"]
+    mut_prob = data["mutation-prob"]
+    cross_prob = data["crossover-prob"]
 
     # Plot for all targets
     for t,target in enumerate(data["targets"], start=1):
