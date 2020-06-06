@@ -57,10 +57,8 @@ def get_gen_stats(toolbox, population):
     """
         Returns the stats for a single generation
     """
-    best = tools.selBest(population, k=1)
-    best = [*toolbox.map(toolbox.evaluate, best)][0][0]
-    worst = tools.selWorst(population, k=1)
-    worst = [*toolbox.map(toolbox.evaluate, worst)][0][0]
+    best = tools.selBest(population, k=1)[0].fitness.values[0]
+    worst = tools.selWorst(population, k=1)[0].fitness.values[0]
     return {'best': float(best), 'worst': float(worst)}
 
 def run_evolutionary_algorithm(toolbox,
