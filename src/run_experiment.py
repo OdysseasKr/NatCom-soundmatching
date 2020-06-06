@@ -7,7 +7,6 @@ import numpy as np
 from deap import creator, base, tools, algorithms
 from logger import Logger
 from target import TargetGenerator
-from utils import plot_results
 
 # Define experiment settings
 SEED = 2
@@ -119,8 +118,8 @@ if __name__ == '__main__':
                     'seed': args.seed,
                     'epsilon': args.epsilon,
                     'gene': gene,
-                    'crossover_prob': crossover_prob,
-                    'mutation_prob': mutation_prob,
+                    'crossover-prob': crossover_prob,
+                    'mutation-prob': mutation_prob,
                     'pop_size': args.pop_size,
                     'max_gen': args.generations,
                     'tourn_size': args.tournsize,
