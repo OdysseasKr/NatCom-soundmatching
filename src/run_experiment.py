@@ -17,7 +17,7 @@ POP_SIZE = 50
 GENERATIONS = 30
 TOURNSIZE = 3
 PARALLEL = True
-N_TARGETS = 20
+N_TARGETS = 1
 N_RUNS = 5
 CROSSOVER_PROB = 0.5
 MUTATION_PROB = 0.1
@@ -75,6 +75,8 @@ def run_evolutionary_algorithm(toolbox,
 
     population = toolbox.population(n=population_size)
     fitness_vals = toolbox.map(toolbox.evaluate, population)
+    for ind, fit in zip(population, fitness_vals):
+        ind.fitness.values = fit
     gen_stats = []
 
     start = time.time()
@@ -86,11 +88,9 @@ def run_evolutionary_algorithm(toolbox,
         offspring = algorithms.varAnd(population, toolbox, cxpb=crossover_prob, mutpb=mutation_prob)
         # Calculate fitness on the offspring
         fitness_vals = list(toolbox.map(toolbox.evaluate, offspring))
-        mean_fitness = 0
         for fit, ind in zip(fitness_vals, offspring):
             # Set each individuals fitness manually
             ind.fitness.values = fit
-            mean_fitness += fit[0]/len(population)
 
         # If converged
         if np.min(fitness_vals) < 0 + EPSILON:
