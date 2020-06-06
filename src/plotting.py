@@ -57,7 +57,9 @@ def metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
     xticklabels = []
     metrics_mean = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
     metrics_std  = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
-    for log in os.listdir(log_dir_path):
+    for log in sorted(os.listdir(log_dir_path)):
+        if log == ".DS_Store":
+            continue
         print(f"Opening {os.path.join(log_dir_path, log)}")
         data = json.load(open(os.path.join(log_dir_path, log)))
         gene_representation = data["gene"]
@@ -79,7 +81,7 @@ def metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
     # Plotting
     for metric in metrics_mean.keys():
         _set_font_size(10*scaler)
-        plt.figure(figsize=(7*scaler,5*scaler))
+        plt.figure(figsize=(10*scaler,5*scaler))
         plt.grid(zorder=1)
         idcs = np.arange(1, len(metrics_mean[metric])+1)
         plt.bar(idcs, metrics_mean[metric], color=COLOURS[:len(idcs)], zorder=2)
@@ -110,4 +112,4 @@ if __name__ == "__main__":
 
     # CODE BELOW GENERATES PLOTS FOR EVERY TARGET IN ONE LOG FILE (so e.g. 20 for hyperparameter-tuning)
     # file_ = os.listdir(test_path)[0]
-    # best_worst_fitness_graph(os.path.join(test_path, file_), False, True)
+    best_worst_fitness_graph("/Users/fbergh/Documents/Radboud/master/1/NatCom/project/NatCom-soundmatching/logs/hyperparameter-tuning/categorical/categorical-mp-0.3-cp-0.7.json", True, False)
