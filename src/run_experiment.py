@@ -90,12 +90,12 @@ def run_evolutionary_algorithm(toolbox,
             # Set each individuals fitness manually
             ind.fitness.values = fit
 
+        population = toolbox.select(offspring, k=population_size)
+
         # If converged
         if np.min(fitness_vals) < 0 + EPSILON:
-            population = offspring
             break
 
-        population = toolbox.select(offspring, k=population_size)
     runtime = time.time() - start
     # Add stats of final population
     gen_stats.append(get_gen_stats(toolbox, population))
