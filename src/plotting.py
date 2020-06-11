@@ -1,11 +1,12 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import os
 
 PLOT_DIR_PATH = "../plots"
 # To up-scale plots so they are high quality when made larger
-SCALER = 1.5 
+SCALER = 1.5
 COLOURS = ["#e6194B","#3cb44b", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabebe", "#469990", "#e6beff", "#9A6324", "#800000", "#aaffc3", "#000075", "#a9a9a9"]
 
 def best_worst_fitness_graph(path, show=True, save=False, scaler=SCALER):
@@ -48,6 +49,73 @@ def best_worst_fitness_graph(path, show=True, save=False, scaler=SCALER):
             plt.show()
         plt.close()
 
+def grouped_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
+    if save:
+        if not os.path.exists(PLOT_DIR_PATH):
+            os.makedirs(PLOT_DIR_PATH)
+
+    # Collect all metrics for all files
+    gene_representation = ""
+    metric_labels = ["mean_fitness", "proportion_of_early_stopping", "fitness_evaluations_per_run"]
+    total_metrics = []
+    for log in sorted(os.listdir(log_dir_path)):
+        log_metrics = []
+        if log == ".DS_Store":
+            continue
+        print(f"Opening {os.path.join(log_dir_path, log)}")
+        data = json.load(open(os.path.join(log_dir_path, log)))
+        gene_representation = data["gene"]
+        log_metrics = [data["crossover-prob"], data["mutation-prob"]]
+
+        # Get mean value per metric
+        for metric in metric_labels:
+            log_metrics.append(data["metrics"][metric])
+
+        # Gather metrics per target
+        metric_vals_per_target = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
+        for target in data["targets"]:
+            for metric in metric_labels:
+                metric_vals_per_target[metric].append(target["metrics"][metric])
+        # Compute std value pet metric
+        for metric in metric_labels:
+            log_metrics.append(np.std(metric_vals_per_target[metric]))
+        total_metrics.append(log_metrics)
+
+    # Add all metrics in a dataframe
+    columns = ["cp", "mp"]
+    columns.extend(metric_labels)
+    columns.extend([m+"_std" for m in metric_labels])
+    df = pd.DataFrame(total_metrics, columns=columns)
+
+    # Plotting
+    for metric in metric_labels:
+        _set_font_size(10*scaler)
+        plt.figure(figsize=(10*scaler,5*scaler))
+        plt.grid(zorder=1)
+        mps = df["mp"].unique()
+        idcs = np.arange(len(mps))
+        bar_width = 0.3
+
+        # Plot bars for each mutation probability
+        for i, mp in enumerate(mps):
+            mp_data = df[df["mp"] == mp]
+            plt.bar(idcs + i*bar_width, mp_data[metric].values,
+                    width=bar_width, label="mp="+str(mp), color=COLOURS[i])
+            plt.errorbar(idcs + i*bar_width, mp_data[metric].values, mp_data[metric+"_std"].values, color="black", fmt="o",
+                         capsize=4*scaler, markersize=5*scaler, linewidth=0.8*scaler, zorder=3)
+
+        # Ticks for crossover probability
+        plt.xticks(idcs+bar_width, labels=["cp=0.1","cp=0.2", "cp=0.3"])
+        plt.legend()
+        metric_text = metric.replace("_"," ").capitalize()
+        plt.ylabel(metric_text)
+        plt.title(f"{metric_text} for {gene_representation} gene", fontsize=12*scaler)
+        if save:
+            plt.savefig(os.path.join(PLOT_DIR_PATH, f"{gene_representation}_{metric}_grouped"), bbox_inches="tight")
+        if show:
+            plt.show()
+        plt.close()
+
 def metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
     if save:
         if not os.path.exists(PLOT_DIR_PATH):
@@ -68,7 +136,7 @@ def metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
         # Get mean value per metric
         for metric in data["metrics"]:
             metrics_mean[metric].append(data["metrics"][metric])
-        
+
         # Gather metrics per target
         metric_vals_per_target = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
         for target in data["targets"]:
@@ -85,7 +153,7 @@ def metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
         plt.grid(zorder=1)
         idcs = np.arange(1, len(metrics_mean[metric])+1)
         plt.bar(idcs, metrics_mean[metric], color=COLOURS[:len(idcs)], zorder=2)
-        plt.errorbar(idcs, metrics_mean[metric], metrics_std[metric], color="black", fmt="o", 
+        plt.errorbar(idcs, metrics_mean[metric], metrics_std[metric], color="black", fmt="o",
                      capsize=4*scaler, markersize=5*scaler, linewidth=0.8*scaler, zorder=3)
         plt.xlabel("Probabilities")
         plt.xticks(ticks=idcs, labels=xticklabels)
@@ -109,7 +177,8 @@ def _set_font_size(font_size):
 if __name__ == "__main__":
     test_path = "../logs/hyperparameter-tuning/binary"
     metric_graph(test_path, show=True, save=True, scaler=SCALER)
+    grouped_metric_graph(test_path, show=True, save=True, scaler=SCALER)
 
     # CODE BELOW GENERATES PLOTS FOR EVERY TARGET IN ONE LOG FILE (so e.g. 20 for hyperparameter-tuning)
     # file_ = os.listdir(test_path)[0]
-    best_worst_fitness_graph("/Users/fbergh/Documents/Radboud/master/1/NatCom/project/NatCom-soundmatching/logs/hyperparameter-tuning/categorical/categorical-mp-0.3-cp-0.7.json", True, False)
+    best_worst_fitness_graph("../logs/hyperparameter-tuning/categorical/categorical-cp-0.3-mp-0.1.json", True, False)
