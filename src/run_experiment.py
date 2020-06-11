@@ -133,7 +133,7 @@ if __name__ == '__main__':
                 creator.create('Individual', list, fitness=creator.FitnessMin)
 
                 # Create target signal generator and the toolbox
-                target_generator = TargetGenerator()
+                target_generator = TargetGenerator(seed=2)
                 toolbox = ga.get_toolbox(args.tournsize)
 
                 # Enable parallel code
@@ -169,4 +169,3 @@ if __name__ == '__main__':
 
                 if PARALLEL:
                     pool.close()
-
