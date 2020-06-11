@@ -92,12 +92,11 @@ def grouped_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
         _set_font_size(10*scaler)
         plt.figure(figsize=(10*scaler,5*scaler))
         plt.grid(zorder=1)
-        mps = df["mp"].unique()
-        idcs = np.arange(len(mps))
+        idcs = np.arange(len(df["cp"].unique()))
         bar_width = 0.3
 
         # Plot bars for each mutation probability
-        for i, mp in enumerate(mps):
+        for i, mp in enumerate(df["mp"].unique()):
             mp_data = df[df["mp"] == mp]
             plt.bar(idcs + i*bar_width, mp_data[metric].values,
                     width=bar_width, label="mp="+str(mp), color=COLOURS[i])
@@ -105,7 +104,7 @@ def grouped_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
                          capsize=4*scaler, markersize=5*scaler, linewidth=0.8*scaler, zorder=3)
 
         # Ticks for crossover probability
-        plt.xticks(idcs+bar_width, labels=["cp=0.1","cp=0.2", "cp=0.3"])
+        plt.xticks(idcs+bar_width, labels=["cp="+str(cp) for cp in df["cp"].unique()])
         plt.legend()
         metric_text = metric.replace("_"," ").capitalize()
         plt.ylabel(metric_text)
