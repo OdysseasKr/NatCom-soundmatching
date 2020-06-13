@@ -197,10 +197,10 @@ def final_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
     # Plotting
     for metric in metrics_mean.keys():
         _set_font_size(10*scaler)
-        plt.figure(figsize=(10*scaler,5*scaler))
+        plt.figure(figsize=(6*scaler,5*scaler))
         plt.grid(zorder=1)
         idcs = np.arange(1, len(metrics_mean[metric])+1)
-        plt.bar(idcs, metrics_mean[metric], color=COLOURS[:len(idcs)], zorder=2)
+        plt.bar(idcs, metrics_mean[metric], color=COLOURS[:len(idcs)], zorder=2, width=0.7)
         plt.errorbar(idcs, metrics_mean[metric], metrics_std[metric], color="black", fmt="o",
                      capsize=4*scaler, markersize=5*scaler, linewidth=0.8*scaler, zorder=3)
         plt.xlabel("Gene type")
