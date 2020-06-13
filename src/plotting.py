@@ -165,6 +165,55 @@ def metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
             plt.show()
         plt.close()
 
+def final_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
+    if save:
+        if not os.path.exists(PLOT_DIR_PATH):
+            os.makedirs(PLOT_DIR_PATH)
+
+    xticklabels = []
+    metrics_mean = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
+    metrics_std  = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
+    for log in ['binary.json', 'categorical.json']:
+        if log == ".DS_Store":
+            continue
+        print(f"Opening {os.path.join(log_dir_path, log)}")
+        data = json.load(open(os.path.join(log_dir_path, log)))
+        gene_representation = data["gene"]
+        xticklabels.append(data["gene"].capitalize())
+
+        # Get mean value per metric
+        for metric in data["metrics"]:
+            metrics_mean[metric].append(data["metrics"][metric])
+
+        # Gather metrics per target
+        metric_vals_per_target = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
+        for target in data["targets"]:
+            for metric in target["metrics"]:
+                metric_vals_per_target[metric].append(target["metrics"][metric])
+        # Compute std value pet metric
+        for metric in metric_vals_per_target.keys():
+            metrics_std[metric].append(np.std(metric_vals_per_target[metric]))
+
+    # Plotting
+    for metric in metrics_mean.keys():
+        _set_font_size(10*scaler)
+        plt.figure(figsize=(10*scaler,5*scaler))
+        plt.grid(zorder=1)
+        idcs = np.arange(1, len(metrics_mean[metric])+1)
+        plt.bar(idcs, metrics_mean[metric], color=COLOURS[:len(idcs)], zorder=2)
+        plt.errorbar(idcs, metrics_mean[metric], metrics_std[metric], color="black", fmt="o",
+                     capsize=4*scaler, markersize=5*scaler, linewidth=0.8*scaler, zorder=3)
+        plt.xlabel("Gene type")
+        plt.xticks(ticks=idcs, labels=xticklabels)
+        metric_text = metric.replace("_"," ").capitalize()
+        plt.ylabel(metric_text)
+        plt.title(f"{metric_text} for each gene representation", fontsize=12*scaler)
+        if save:
+            plt.savefig(os.path.join(PLOT_DIR_PATH, f"final_{metric}"), bbox_inches="tight")
+        if show:
+            plt.show()
+        plt.close()
+
 def _set_font_size(font_size):
     plt.rc('font', size=font_size)          # controls default text sizes
     plt.rc('axes', titlesize=font_size)     # fontsize of the axes title
@@ -175,9 +224,10 @@ def _set_font_size(font_size):
 
 if __name__ == "__main__":
     test_path = "../logs/hyperparameter-tuning/binary"
-    metric_graph(test_path, show=True, save=True, scaler=SCALER)
-    grouped_metric_graph(test_path, show=True, save=True, scaler=SCALER)
+    #metric_graph(test_path, show=True, save=True, scaler=SCALER)
+    #grouped_metric_graph(test_path, show=True, save=True, scaler=SCALER)
+    final_metric_graph("../logs/main-comparison", show=True, save=True, scaler=SCALER)
 
     # CODE BELOW GENERATES PLOTS FOR EVERY TARGET IN ONE LOG FILE (so e.g. 20 for hyperparameter-tuning)
     # file_ = os.listdir(test_path)[0]
-    best_worst_fitness_graph("../logs/hyperparameter-tuning/categorical/categorical-cp-0.3-mp-0.1.json", True, False)
+    #best_worst_fitness_graph("../logs/hyperparameter-tuning/categorical/categorical-cp-0.3-mp-0.1.json", True, False)
