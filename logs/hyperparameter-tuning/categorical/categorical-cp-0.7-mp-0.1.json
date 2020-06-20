@@ -8698,7 +8698,8 @@
       }
     }
   ],
-  "seed": 2,
+  "experiment_seed": 2,
+  "target_seed": 1337,
   "epsilon": 10,
   "gene": "categorical",
   "crossover-prob": 0.7,

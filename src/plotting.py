@@ -98,7 +98,7 @@ def grouped_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
         # Plot bars for each mutation probability
         for i, mp in enumerate(df["mp"].unique()):
             mp_data = df[df["mp"] == mp]
-            plt.bar(idcs + i*bar_width, mp_data[metric].values,
+            plt.bar(idcs + i*bar_width, mp_data[metric].values, zorder=2,
                     width=bar_width, label="mp="+str(mp), color=COLOURS[i])
             plt.errorbar(idcs + i*bar_width, mp_data[metric].values, mp_data[metric+"_std"].values, color="black", fmt="o",
                          capsize=4*scaler, markersize=5*scaler, linewidth=0.8*scaler, zorder=3)
@@ -110,7 +110,7 @@ def grouped_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
         plt.ylabel(metric_text)
         plt.title(f"{metric_text} for {gene_representation} gene", fontsize=12*scaler)
         if save:
-            plt.savefig(os.path.join(PLOT_DIR_PATH, f"{gene_representation}_{metric}_grouped"), bbox_inches="tight")
+            plt.savefig(os.path.join(PLOT_DIR_PATH, f"{gene_representation}_{metric}_grouped.pdf"), bbox_inches="tight")
         if show:
             plt.show()
         plt.close()
@@ -225,8 +225,8 @@ def _set_font_size(font_size):
 if __name__ == "__main__":
     test_path = "../logs/hyperparameter-tuning/binary"
     #metric_graph(test_path, show=True, save=True, scaler=SCALER)
-    #grouped_metric_graph(test_path, show=True, save=True, scaler=SCALER)
-    final_metric_graph("../logs/main-comparison", show=True, save=True, scaler=SCALER)
+    grouped_metric_graph(test_path, show=True, save=True, scaler=SCALER)
+    # final_metric_graph("../logs/main-comparison", show=True, save=True, scaler=SCALER)
 
     # CODE BELOW GENERATES PLOTS FOR EVERY TARGET IN ONE LOG FILE (so e.g. 20 for hyperparameter-tuning)
     # file_ = os.listdir(test_path)[0]

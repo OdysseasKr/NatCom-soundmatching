@@ -8750,7 +8750,8 @@
       }
     }
   ],
-  "seed": 2,
+  "experiment_seed": 2,
+  "target_seed": 1337,
   "epsilon": 10,
   "gene": "binary",
   "crossover-prob": 0.3,

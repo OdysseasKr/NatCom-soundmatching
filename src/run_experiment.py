@@ -9,7 +9,8 @@ from logger import Logger
 from target import TargetGenerator
 
 # Define experiment settings
-SEED = 2
+EXPERIMENT_SEED = 2
+TARGET_SEED = 1337
 EPSILON = 10
 sr = 44100
 GENE = 'categorical'  # Can be 'categorical' or 'binary'
@@ -27,8 +28,10 @@ DESCRIPTION = 'Hyper Parameter optimizations 0.2'
 ### Argument parser ###
 parser = argparse.ArgumentParser(description='Run a genetic algorithm for sound matching with specified parameters.')
 parser.add_argument('-gene', nargs='+', dest="genes", default = [GENE], help="Gene representation (categorical/binary)")
-parser.add_argument('-s', type=int, nargs='?', dest="seed",
-                    default = SEED, help='Seed')
+parser.add_argument('-es', type=int, nargs='?', dest="experiment_seed",
+                    default = EXPERIMENT_SEED, help='Seed for genetic algorithm')
+parser.add_argument('-ts', type=int, nargs='?', dest="target_seed",
+                    default = TARGET_SEED, help='Seed for target generator')
 parser.add_argument('-e', type=int, nargs='?', dest="epsilon",
                     default = EPSILON, help='Error margin for convergence')
 parser.add_argument('-p', type=int, nargs='?', dest="pop_size",
@@ -113,7 +116,8 @@ if __name__ == '__main__':
             for mutation_prob in args.mutation_probs:
                 logger = Logger('../logs', DESCRIPTION)
                 logger.set_header({
-                    'seed': args.seed,
+                    'experiment_seed': args.experiment_seed,
+                    'target_seed': args.target_seed,
                     'epsilon': args.epsilon,
                     'gene': gene,
                     'crossover-prob': crossover_prob,
@@ -126,14 +130,14 @@ if __name__ == '__main__':
                 })
 
                 # Set seed for reproducibility
-                random.seed(args.seed)
+                random.seed(args.experiment_seed)
 
                 # Define fitness function objective (minimisation)
                 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
                 creator.create('Individual', list, fitness=creator.FitnessMin)
 
                 # Create target signal generator and the toolbox
-                target_generator = TargetGenerator(seed=2)
+                target_generator = TargetGenerator(seed=args.target_seed)
                 toolbox = ga.get_toolbox(args.tournsize)
 
                 # Enable parallel code
