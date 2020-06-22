@@ -6,7 +6,6 @@ Natural Computing course at Radboud University (2019-2020).
 
 ## Structure
 This project has the following file structure:
-* [`examples/`](examples/): 
 * [`logs/`](logs/): contains the `.json`-format log files that were generated in the experiments we ran.
 * [`plots`](plots/): will be created by the [`src/plotting.py`](src/plotting.py) file to store all the generated plots.
 * [`src/`](src/): contains the source code for the project.
@@ -55,7 +54,7 @@ Automatically creating and saving plots was not added to the pipeline in `run_ex
 cd src
 python3 plotting.py
 ```
-All plots will be displayed and saved to a generated directory `plots/`.
+All plots will be saved to a generated directory `plots/`.
 
 ## Contributors
 [Freek van den Bergh](https://github.com/fbergh)<br>
