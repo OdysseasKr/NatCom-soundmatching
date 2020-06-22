@@ -23,7 +23,7 @@ This project has the following file structure:
 The project was built for Python 3. The main pipeline of the project can be called from the command line with the `run_experiment.py` file. In our project we conducted two experiments: hyperparameter optimisation and comparison of representations (between binary and categorical).
 
 ### Hyperparameter Optimisation
-We conducted an experiment to optimal hyperparameters with a small grid search. For both representations, we tested all possible combinations of mating probabilities $[0.3, 0.5, 0.7]$ and mutation probabilities $[0.1, 0.2, 0.3]$. This experiment can be recreated with the following commands (given that no changes were made to the default parameters):
+We conducted an experiment to optimal hyperparameters with a small grid search. For both representations, we tested all possible combinations of mating probabilities [0.3, 0.5, 0.7] and mutation probabilities [0.1, 0.2, 0.3]. This experiment can be recreated with the following commands (given that no changes were made to the default parameters):
 ```bash
 cd src
 python3 run_experiment.py -gene "binary" "categorical" -mp 0.1 0.2 0.3 -cp 0.3 0.5 0.7 
