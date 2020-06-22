@@ -61,7 +61,7 @@ def grouped_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
     metric_labels = ["mean_fitness", "proportion_of_early_stopping", "fitness_evaluations_per_run"]
     metric_titles = {
         "mean_fitness": "Mean error (MSE)",
-        "proportion_of_early_stopping": "Proportion of early stopping",
+        "proportion_of_early_stopping": "Percentage of early stopping",
         "fitness_evaluations_per_run": "Mean number of evaluations per run"
     }
     total_metrics = []
@@ -183,7 +183,7 @@ def final_metric_graph(log_dir_path, show=True, save=False, scaler=SCALER):
     metrics_std  = { "mean_fitness": [], "proportion_of_early_stopping": [], "fitness_evaluations_per_run": [] }
     metric_titles = {
         "mean_fitness": "Mean error (MSE)",
-        "proportion_of_early_stopping": "Proportion of early stopping",
+        "proportion_of_early_stopping": "Percentage of early stopping",
         "fitness_evaluations_per_run": "Mean number of evaluations per run"
     }
     for log in ['binary.json', 'categorical.json']:
@@ -264,17 +264,20 @@ def _set_font_size(font_size):
     plt.rc('ytick', labelsize=font_size)    # fontsize of the tick labels
     plt.rc('legend', fontsize=font_size)    # legend fontsize
 
-if __name__ == "__main__":
+def recreate_experiment():
     test_path = "../logs/hyperparameter-tuning/binary"
-    #metric_graph(test_path, show=True, save=True, scaler=SCALER)
+    # Barplots with metrics
     grouped_metric_graph("../logs/hyperparameter-tuning/binary", show=False, save=True, scaler=SCALER)
     grouped_metric_graph("../logs/hyperparameter-tuning/categorical", show=False, save=True, scaler=SCALER)
     final_metric_graph("../logs/main-comparison", show=False, save=True, scaler=SCALER)
 
-    # CODE BELOW GENERATES PLOTS FOR EVERY TARGET IN ONE LOG FILE (so e.g. 20 for hyperparameter-tuning)
-    # file_ = os.listdir(test_path)[0]
+    # Fitness progress over generations
     fitness_graph("../logs/hyperparameter-tuning/categorical/categorical-cp-0.5-mp-0.3.json", mode='best', save=True, show=False)
     fitness_graph("../logs/hyperparameter-tuning/categorical/categorical-cp-0.5-mp-0.3.json", mode='worst', save=True, show=False)
 
     # Create a plot of all synth shapes
     shape_plot(save=True, show=False)
+
+
+if __name__ == "__main__":
+    recreate_experiment()
