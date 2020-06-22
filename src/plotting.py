@@ -242,6 +242,12 @@ def shape_plot(save=True, show=False):
             plt.plot(sa[i], linewidth=2)
         else:
             plt.plot(sa[i][:250], linewidth=4)
+        plt.yticks(ticks=[-1, 1], labels=['-1', '1'])
+        plt.tick_params(axis='x',          # changes apply to the x-axis
+                        which='both',      # both major and minor ticks are affected
+                        bottom=False,      # ticks along the bottom edge are off
+                        top=False,         # ticks along the top edge are off
+                        labelbottom=False) # labels along the bottom edge are off
         plt.title(s, fontsize=15)
 
     plt.tight_layout()
