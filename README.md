@@ -56,7 +56,12 @@ python3 plotting.py
 ```
 All plots will be saved to a generated directory `plots/`.
 
+## Example Screenshot of System Behaviour
+This is an example screenshot of system behaviour for running the categorical representation with 100 targets, mate probability 0.5, and mutation probability 0.3 on the Spyder IDE.
+
+![Example screenshot of system behaviour](img/example-output.jpeg)
+
 ## Contributors
 [Freek van den Bergh](https://github.com/fbergh)<br>
 [Odysseas Krystalakos](https://github.com/OdysseasKr)<br>
-[Mădălina Neamţu]()
+[Mădălina Neamţu](https://github.com/Madalina9675)
